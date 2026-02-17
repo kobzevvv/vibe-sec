@@ -1,6 +1,7 @@
 import { scanGitHub } from "./scanners/github";
 import { scanEndpoints } from "./scanners/endpoints";
 import { scanAIInterfaces } from "./scanners/ai-interfaces";
+import { scanDependencies } from "./scanners/dependencies";
 import {
   buildSummary,
   formatMarkdown,
@@ -36,16 +37,18 @@ async function runScan(env: Env): Promise<ScanResult> {
   };
 
   // Run all scanners in parallel
-  const [githubFindings, endpointFindings, aiFindings] = await Promise.all([
+  const [githubFindings, endpointFindings, aiFindings, depFindings] = await Promise.all([
     scanGitHub(config),
     scanEndpoints(config),
     scanAIInterfaces(config),
+    scanDependencies(config),
   ]);
 
   const allFindings = [
     ...githubFindings,
     ...endpointFindings,
     ...aiFindings,
+    ...depFindings,
   ].sort((a, b) => {
     const order = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
     return order[a.severity] - order[b.severity];
