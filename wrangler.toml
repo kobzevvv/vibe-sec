@@ -1,0 +1,23 @@
+name = "vibe-sec"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Your GitHub username or org to scan
+GITHUB_TARGET = "your-username"
+# Where to send reports: "webhook" | "telegram" | "console"
+REPORT_MODE = "console"
+# Optional: Telegram bot token (if REPORT_MODE = "telegram")
+# TELEGRAM_BOT_TOKEN = "..."
+# TELEGRAM_CHAT_ID = "..."
+# Optional: Webhook URL (if REPORT_MODE = "webhook")
+# WEBHOOK_URL = "..."
+
+[triggers]
+# Run scan every day at 9am UTC
+crons = ["0 9 * * *"]
+
+[[kv_namespaces]]
+binding = "SCAN_RESULTS"
+id = "REPLACE_WITH_YOUR_KV_ID"
+preview_id = "REPLACE_WITH_YOUR_KV_PREVIEW_ID"

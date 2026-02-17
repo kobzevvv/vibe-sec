@@ -1,0 +1,15 @@
+{
+  "name": "vibe-sec",
+  "version": "0.1.0",
+  "private": false,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "scan": "node scripts/scan-local.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^3.100.0",
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "typescript": "^5.7.3"
+  }
+}
