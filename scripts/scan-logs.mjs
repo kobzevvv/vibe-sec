@@ -397,7 +397,7 @@ function protectionLevels(quickFix, { claudeNote = false } = {}) {
   lines.push('**What to do:**');
   lines.push(`- 🔧 **Minimum fix**: ${quickFix}`);
   lines.push('- 🛡️ **Better — add hook guard**: \`npx vibe-sec setup\` intercepts every tool call before execution, regardless of what Claude decided. Blocks attacks in real time, under 5ms.');
-  lines.push('- 📱 **Best — full monitoring**: [vibe-sec app](https://github.com/kobzevvv/vibe-sec) — menubar status, daily background scans, instant alerts when score changes.');
+  lines.push('- 📱 **Best — full monitoring**: [vibe-sec menubar app](https://github.com/kobzevvv/vibe-sec-app) — sits in your menu bar, daily background scans, instant alerts when score changes. [→ Download .app](https://github.com/kobzevvv/vibe-sec-app/releases/latest)');
 
   return lines.join('\n');
 }

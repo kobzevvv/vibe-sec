@@ -545,11 +545,28 @@ function buildPage(mdFile, state) {
   }
   blockquote.bq-negative strong { color: #fca5a5; }
 
+  .app-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-top: 48px;
+    padding: 14px 18px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 8px;
+  }
+  .app-callout-icon { font-size: 1.4rem; line-height: 1; margin-top: 2px; }
+  .app-callout-body { font-size: .85rem; color: #aaa; }
+  .app-callout-body strong { color: #e0e0e0; }
+  .app-callout-links { display: flex; gap: 16px; margin-top: 6px; }
+  .app-callout-links a { color: #60a5fa; text-decoration: none; font-size: .8rem; }
+  .app-callout-links a:hover { text-decoration: underline; }
+
   .report-footer {
     color: #444;
     font-size: .75rem;
-    margin-top: 48px;
-    padding-top: 16px;
+    margin-top: 12px;
+    padding-top: 12px;
     border-top: 1px solid #1e1e1e;
     display: flex;
     gap: 16px;
@@ -640,6 +657,17 @@ function buildPage(mdFile, state) {
 <div class="container">
 <div class="finding">
 ${body}
+</div>
+<div class="app-callout">
+  <div class="app-callout-icon">📱</div>
+  <div class="app-callout-body">
+    <strong>Get the menubar app</strong> — always-visible security status, daily background scans, instant alerts.
+    <div class="app-callout-links">
+      <a href="https://github.com/kobzevvv/vibe-sec-app/releases/latest" target="_blank">→ Download .app</a>
+      <a href="https://github.com/kobzevvv/vibe-sec-app" target="_blank">GitHub</a>
+      <a href="https://github.com/kobzevvv/vibe-sec-app#build--run" target="_blank">Build from source</a>
+    </div>
+  </div>
 </div>
 <div class="report-footer">
   <span>vibe-sec</span>

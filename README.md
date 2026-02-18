@@ -218,6 +218,35 @@ Scanner runs daily at 9am UTC via cron. Access reports at `https://vibe-sec.<you
 
 ---
 
+## macOS Menubar App
+
+Native status bar app — always-visible security score, scan on demand, instant alerts.
+
+**→ [github.com/kobzevvv/vibe-sec-app](https://github.com/kobzevvv/vibe-sec-app)**
+
+### Install options
+
+**Option A — Download (easiest)**
+1. Download `VibeSec-x.x.x.zip` from [Releases](https://github.com/kobzevvv/vibe-sec-app/releases/latest)
+2. Unzip → drag `VibeSec.app` to `/Applications`
+3. If macOS blocks it: System Settings → Privacy & Security → Open Anyway
+
+**Option B — Homebrew**
+```bash
+brew tap kobzevvv/tap
+brew install --cask vibe-sec-app
+```
+
+**Option C — Build from source**
+```bash
+git clone https://github.com/kobzevvv/vibe-sec-app
+cd vibe-sec-app
+swift build -c release
+open .build/release/VibeSec
+```
+
+---
+
 ## Test Scenarios
 
 `examples/` contains five realistic prompt injection scenarios to test the hook guard, from easy (bare injection in README) to hard (base64-obfuscated command in a setup script).
