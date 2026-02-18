@@ -132,6 +132,12 @@ function mdToHtml(text) {
     })
     .replace(/^#### (.+)$/gm, '</div><div class="finding"><h4>$1</h4>')
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    // links: [text](url)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    // italic: _text_ (but not inside URLs or code)
+    .replace(/(?<![\/\w])_([^_]+)_(?![\/\w])/g, "<em>$1</em>")
+    // navigation arrows: → text on its own line
+    .replace(/^→\s+(.+)$/gm, '<p class="nav-link">→ $1</p>')
     .replace(/^\|(.+)\|$/gm, (line) => {
       if (/^[\s|:-]+$/.test(line)) return "";
       const cells = line.split("|").slice(1, -1).map(c => c.trim());
@@ -214,6 +220,11 @@ function renderHtmlReport(mdContent) {
     background: #1e1e1e; color: #a8d8a8; padding: 1px 5px;
     border-radius: 3px; font-size: .85em;
   }
+  a { color: #58a6ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  em { color: #999; font-style: italic; }
+  .nav-link { margin: 4px 0; color: #888; font-size: .9rem; }
+  .nav-link a { color: #58a6ff; }
   ul { margin: 8px 0 8px 20px; }
   li { color: #bbb; margin: 3px 0; font-size: .93rem; }
   .generated { color: #555; font-size: .8rem; margin-top: 40px; text-align: center; }
