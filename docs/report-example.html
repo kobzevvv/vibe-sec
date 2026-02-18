@@ -257,18 +257,38 @@
   .btn-cancel { background: #1c1c1f; color: #777; border: 1px solid #2a2a2e; }
   .btn-cancel:hover { color: #aaa; }
 
-  /* Blockquotes — used for verdict callouts */
+  /* Blockquotes — verdict callouts */
   blockquote {
     border-left: 3px solid #dc2626;
     background: #150c0c;
     padding: 12px 18px;
     border-radius: 0 5px 5px 0;
-    margin: 10px 0;
+    margin: 6px 0;
     color: #f87171;
     line-height: 1.6;
-    font-size: .9rem;
+    font-size: .88rem;
+    font-weight: 500;
   }
   blockquote strong { color: #fca5a5; }
+
+  /* Split-color Claude note */
+  blockquote.bq-positive {
+    border-left-color: #16a34a;
+    background: #091a0c;
+    color: #6ee88a;
+    border-radius: 0 5px 0 0;
+    margin-bottom: 0;
+  }
+  blockquote.bq-positive strong { color: #86efac; }
+  blockquote.bq-negative {
+    border-left-color: #dc2626;
+    background: #150c0c;
+    color: #f87171;
+    border-radius: 0 0 5px 5px;
+    margin-top: 0;
+    border-top: 1px solid #2a1010;
+  }
+  blockquote.bq-negative strong { color: #fca5a5; }
 
   .report-footer {
     color: #444;
@@ -361,17 +381,10 @@
   .finding { scroll-margin-top: 24px; }
 
   .sample-banner {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 200;
-    background: #1a1a2e;
-    border-bottom: 1px solid #2a2a4e;
-    padding: 8px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: .78rem;
-    color: #666;
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    background: #1a1a2e; border-bottom: 1px solid #2a2a4e;
+    padding: 8px 24px; display: flex; align-items: center;
+    justify-content: space-between; font-size: .78rem; color: #666;
   }
   .sample-banner a { color: #6699cc; text-decoration: none; }
   .sample-banner a:hover { text-decoration: underline; }
@@ -440,7 +453,8 @@
 <li><strong>What this means</strong>: Claude Code will not ask for permission before executing commands. The agent acts fully autonomously — deletes files, makes requests, changes configs — without any confirmation dialog.</li>
 <li><strong>Nightmare scenario</strong>: One malicious site with prompt injection and the agent will execute any command without stopping.</li>
 </ul>
-<blockquote><strong>On Claude's built-in protection</strong>: Claude does catch most obvious prompt injection attempts — simple "ignore previous instructions" patterns. In our testing it stops the majority of naive attacks. But sophisticated attacks embedded in files, encoded in base64, or chained across multiple steps still get through. Don't rely on Claude alone.</blockquote>
+<blockquote class="bq-positive"><strong>On Claude's built-in protection</strong>: Claude does catch most obvious prompt injection attempts — simple "ignore previous instructions" patterns. In our testing it stops the majority of naive attacks.</blockquote>
+<blockquote class="bq-negative">But sophisticated attacks embedded in files, encoded in base64, or chained across multiple steps still get through. Don't rely on Claude alone.</blockquote>
 
 <p><strong>What to do:</strong></p>
 <ul><li>🔧 <strong>Minimum fix</strong>: In <code class="inline">~/.claude/settings.json</code>, set <code class="inline">"skipDangerousModePermissionPrompt": false</code> — Claude will pause and ask before running risky commands.</li>
@@ -599,7 +613,7 @@
         <h4><span class="sev-badge sev-high">HIGH</span> clawdbot: getUpdates conflict — 2000+ conflicts (possible token leak!)</h4>
         <div class="risk-actions-static" style="margin:10px 0 4px;color:#444;font-size:.76rem;">→ <a href='https://github.com/kobzevvv/vibe-sec' target='_blank' style='color:#555'>Run locally</a> to accept, fix, or snooze findings</div>
 <ul><li><strong>Log</strong>: <code class="inline">~/.clawdbot/logs/gateway.log</code></li>
-<li><strong>Last conflict</strong>: 2/18/2026, 8:21:04 PM</li>
+<li><strong>Last conflict</strong>: 2/18/2026, 8:25:07 PM</li>
 <li><strong>What this means</strong>: Telegram API returns <code class="inline">409 Conflict</code> when TWO processes simultaneously try to poll updates with the same bot token. This means either:</li>
 </ul>  - Multiple clawdbot instances are running (check: <code class="inline">pgrep -a clawdbot</code>)
   - <strong>Your Telegram bot token has leaked and someone else is using it</strong> — this is a serious incident
@@ -623,7 +637,8 @@
 <ul><li><strong>Found in</strong>: <code class="inline">/Users/vova/.claude/CLAUDE.md</code></li>
 <li><strong>What this means</strong>: Your CLAUDE.md has no instructions telling the agent to ignore commands from external sources (websites, documents, tool outputs).</li>
 </ul>
-<blockquote><strong>On Claude's built-in protection</strong>: Claude does catch most obvious prompt injection attempts — simple "ignore previous instructions" patterns. In our testing it stops the majority of naive attacks. But sophisticated attacks embedded in files, encoded in base64, or chained across multiple steps still get through. Don't rely on Claude alone.</blockquote>
+<blockquote class="bq-positive"><strong>On Claude's built-in protection</strong>: Claude does catch most obvious prompt injection attempts — simple "ignore previous instructions" patterns. In our testing it stops the majority of naive attacks.</blockquote>
+<blockquote class="bq-negative">But sophisticated attacks embedded in files, encoded in base64, or chained across multiple steps still get through. Don't rely on Claude alone.</blockquote>
 
 <p><strong>What to do:</strong></p>
 <ul><li>🔧 <strong>Minimum fix</strong>: Add to CLAUDE.md:</li>
@@ -651,10 +666,10 @@
 <li><strong>Inspect</strong>:</li>
 </ul><pre class="code bash"><code>grep -rl "TOKEN\|SECRET\|KEY\|API" ~/.claude/shell-snapshots/ 2&gt;/dev/null</code></pre>
 
-</div><div class="finding sev-medium" id="multiple-claude-instances-running-simultaneously-14-processe">
-        <h4><span class="sev-badge sev-medium">MEDIUM</span> Multiple Claude instances running simultaneously (14 processes)</h4>
+</div><div class="finding sev-medium" id="multiple-claude-instances-running-simultaneously-15-processe">
+        <h4><span class="sev-badge sev-medium">MEDIUM</span> Multiple Claude instances running simultaneously (15 processes)</h4>
         <div class="risk-actions-static" style="margin:10px 0 4px;color:#444;font-size:.76rem;">→ <a href='https://github.com/kobzevvv/vibe-sec' target='_blank' style='color:#555'>Run locally</a> to accept, fix, or snooze findings</div>
-<ul><li><strong>Count</strong>: 14 Claude Code processes</li>
+<ul><li><strong>Count</strong>: 15 Claude Code processes</li>
 <li><strong>Risk</strong>: Two Claude agents working in the same directory can write to the same file simultaneously — one silently overwrites the other's changes. Migrations run twice will corrupt the DB schema.</li>
 <li><strong>Fix</strong>: Use <code class="inline">git worktrees</code> for parallel work in separate directories: <code class="inline">git worktree add ../project-branch-2 feature-branch</code></li>
 </ul>

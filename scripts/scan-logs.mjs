@@ -377,7 +377,8 @@ function protectionLevels(quickFix, { claudeNote = false } = {}) {
   const lines = [];
 
   if (claudeNote) {
-    lines.push(`> **On Claude's built-in protection**: Claude does catch most obvious prompt injection attempts — simple "ignore previous instructions" patterns. In our testing it stops the majority of naive attacks. But sophisticated attacks embedded in files, encoded in base64, or chained across multiple steps still get through. Don't rely on Claude alone.`);
+    lines.push(`> ✓ **On Claude's built-in protection**: Claude does catch most obvious prompt injection attempts — simple "ignore previous instructions" patterns. In our testing it stops the majority of naive attacks.`);
+    lines.push(`> ✗ But sophisticated attacks embedded in files, encoded in base64, or chained across multiple steps still get through. Don't rely on Claude alone.`);
     lines.push('');
   }
 
