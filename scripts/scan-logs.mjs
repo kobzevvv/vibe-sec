@@ -57,6 +57,18 @@ const CHARS_PER_TOKEN = 4;
 const MAX_CHARS = 3_200_000; // ~800k tokens total extraction budget
 const AUDIT_LOG_FILE = "vibe-sec-audit.jsonl";
 
+// Skip set: populated from --skip-X flags (e.g. --skip-shell --skip-clawdbot)
+// Supported keys: claude, shell, git, downloads, clawdbot, browser, system
+const SKIP = new Set(
+  process.argv
+    .filter(a => a.startsWith("--skip-"))
+    .map(a => a.replace("--skip-", ""))
+);
+
+// Source: who triggered this scan — "cli" | "app" | "daemon"
+const sourceArg = process.argv.find((a, i) => process.argv[i - 1] === "--source");
+const SCAN_SOURCE = sourceArg || (process.env.VIBE_SEC_DAEMON === "1" ? "daemon" : "cli");
+
 // ─── Audit log ────────────────────────────────────────────────────────────────
 
 function auditLog(entry) {
@@ -1563,18 +1575,18 @@ function runAllStaticChecks() {
   process.stdout.write("\n🔐 Running static security checks...");
 
   const allFindings = [
-    ...checkClaudeSettings(),
-    ...checkPromptInjectionSigns(),  // scan logs for injection indicators first
-    ...checkClaudeMdHardening(),
-    ...checkShellHistorySecrets(),
-    ...checkOpenPorts(),
-    ...checkGitSecurity(),
-    ...checkCliTokenFiles(),
-    ...checkPasteAndSnapshots(),
-    ...checkFirewall(),
-    ...checkClawdbot(),
-    ...checkOperationalSafety(),
-    ...checkMcpToolSecurity(),
+    ...(SKIP.has("claude")    ? [] : checkClaudeSettings()),
+    ...(SKIP.has("claude")    ? [] : checkPromptInjectionSigns()),
+    ...(SKIP.has("claude")    ? [] : checkClaudeMdHardening()),
+    ...(SKIP.has("shell")     ? [] : checkShellHistorySecrets()),
+    ...(SKIP.has("system")    ? [] : checkOpenPorts()),
+    ...(SKIP.has("git")       ? [] : checkGitSecurity()),
+    ...(SKIP.has("downloads") ? [] : checkCliTokenFiles()),
+    ...(SKIP.has("claude")    ? [] : checkPasteAndSnapshots()),
+    ...(SKIP.has("system")    ? [] : checkFirewall()),
+    ...(SKIP.has("clawdbot")  ? [] : checkClawdbot()),
+    ...(SKIP.has("system")    ? [] : checkOperationalSafety()),
+    ...(SKIP.has("claude")    ? [] : checkMcpToolSecurity()),
   ];
 
   if (allFindings.length === 0) {
@@ -2178,8 +2190,8 @@ function extractLogs() {
   console.log(`   .env files:       ${envFiles.length.toLocaleString()} chars`);
 
   // Browser history scan for financial domains
-  console.log("🌐 Scanning browser history for financial domains...");
-  const browserHistory = readBrowserHistory();
+  const browserHistory = SKIP.has("browser") ? null : readBrowserHistory();
+  if (!SKIP.has("browser")) console.log("🌐 Scanning browser history for financial domains...");
   if (browserHistory) {
     const domainCount = (browserHistory.match(/^  - /gm) || []).length;
     console.log(`   browser history:  ${domainCount} financial/important domains found`);
@@ -2328,11 +2340,13 @@ async function main() {
       const medium   = findings.filter(f => f.icon === "💡").length;
       await track("scan_complete", {
         mode: "static",
+        source: SCAN_SOURCE,
         findings_total:    findings.length,
         findings_critical: critical,
         findings_high:     high,
         findings_medium:   medium,
         finding_types:     categorizeFindings(findings),
+        skipped:           [...SKIP],
       });
       await flushQueue(); // send any queued block events from hook.mjs
     } catch { /* telemetry must never break the scan */ }

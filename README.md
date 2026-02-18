@@ -300,11 +300,13 @@ npm run deploy                     # deploy to Cloudflare Workers
 
 vibe-sec collects **anonymous usage data** to understand what it finds in the wild.
 
-What is collected: event type, finding counts and categories (not content), block type and level (not the command), macOS/Node version, vibe-sec version, which AI tools are present (from a fixed known list).
+What is collected: event type, finding counts and categories (not content), block type and level (not the command), blocked command length bucket and interpreter (bash/python/node/etc — not the command itself), scan source (cli/app/daemon), macOS/Node version, vibe-sec version, which AI tools are present (from a fixed known list).
 
 What is **not** collected: commands, file paths, keys, full app list, repo names.
 
-**Public data:** [vibe-sec-telemetry.dev-a96.workers.dev/public/stats](https://vibe-sec-telemetry.dev-a96.workers.dev/public/stats) — all collected data is publicly readable.
+**→ Live stats (public):** [vibe-sec-telemetry.dev-a96.workers.dev/public/stats](https://vibe-sec-telemetry.dev-a96.workers.dev/public/stats)
+
+All collected data is publicly readable — scans per day, most common findings, block rates, interpreter breakdown.
 
 **Opt out:**
 ```bash
