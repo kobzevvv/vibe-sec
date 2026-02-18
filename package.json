@@ -5,7 +5,22 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "scan-logs": "node scripts/scan-logs.mjs"
+    "scan-logs": "node scripts/scan-logs.mjs",
+    "scan-logs:extract": "node scripts/scan-logs.mjs --extract",
+    "scan-logs:analyze": "node scripts/scan-logs.mjs --analyze",
+    "scan-logs:ru": "node scripts/scan-logs.mjs --lang ru",
+    "scan-logs:strict": "node scripts/scan-logs.mjs --security-level strict",
+    "scan-logs:static": "node scripts/scan-logs.mjs --static-only",
+    "validate-keys": "node scripts/validate-keys.mjs",
+    "validate-keys:raw": "node scripts/validate-keys.mjs --raw",
+    "report": "node scripts/serve-report.mjs",
+    "install-hooks": "node scripts/install-hooks.mjs",
+    "remove-hooks": "node scripts/install-hooks.mjs --remove",
+    "allow": "node scripts/allow.mjs",
+    "allow-last": "node scripts/allow.mjs --last",
+    "allowlist": "node scripts/allow.mjs",
+    "setup-daemon": "node scripts/setup-daemon.mjs",
+    "remove-daemon": "node scripts/setup-daemon.mjs --remove"
   },
   "devDependencies": {
     "wrangler": "^3.100.0",
