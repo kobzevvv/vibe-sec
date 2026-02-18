@@ -1,0 +1,45 @@
+name = "vibe-sec-telemetry"
+main = "src/telemetry/worker.mjs"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ─── D1 Database ──────────────────────────────────────────────────────────────
+# Create with: wrangler d1 create vibe-sec-telemetry
+# Then paste the database_id below
+
+[[d1_databases]]
+binding = "TELEMETRY_DB"
+database_name = "vibe-sec-telemetry"
+database_id = "c655104d-1f55-434f-b00a-9308627ea1d6"
+
+# ─── KV for rate limiting ─────────────────────────────────────────────────────
+# Create with: wrangler kv namespace create TELEMETRY_RL
+# Then paste the id below
+
+[[kv_namespaces]]
+binding = "TELEMETRY_RL"
+id = "65ce6042a6f64bc881255ecb82f3beda"
+
+# ─── Custom domain ────────────────────────────────────────────────────────────
+# Uncomment after chillai.space is added to Cloudflare and zone_id is filled in.
+# Steps:
+#   1. cloudflare.com → Add a site → chillai.space (free plan)
+#   2. Copy the two Cloudflare nameservers shown
+#   3. Namecheap → Domain → Nameservers → Custom DNS → paste both
+#   4. Wait ~5min for propagation
+#   5. Cloudflare Dashboard → chillai.space → Overview → copy Zone ID
+#   6. Paste it below and uncomment the [[routes]] block
+#   7. Run: wrangler deploy --config wrangler-telemetry.toml
+
+# [[routes]]
+# pattern = "vibe-sec.chillai.space/*"
+# zone_name = "chillai.space"
+
+# ─── Endpoints ────────────────────────────────────────────────────────────────
+#   workers.dev (always active):
+#     POST https://vibe-sec-telemetry.dev-a96.workers.dev/v1/event
+#     GET  https://vibe-sec-telemetry.dev-a96.workers.dev/public/stats
+#     GET  https://vibe-sec-telemetry.dev-a96.workers.dev/telemetry-row
+#
+#   custom domain (after DNS setup):
+#     GET  https://vibe-sec.chillai.space/telemetry-row
