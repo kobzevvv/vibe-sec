@@ -27,7 +27,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY ||
   process.argv.find((a, i) => process.argv[i - 1] === "--key");
 
 const CLAUDE_DIR = path.join(os.homedir(), ".claude");
-const MAX_CHARS = 3_500_000; // ~875K tokens — safe budget for Gemini 1.5 Flash
+const MAX_CHARS = 700_000; // ~175K tokens — fits Gemini free tier (250k/min limit)
 const CHARS_PER_TOKEN = 4;
 
 // Security-relevant patterns to extract from debug logs (skip noise)
@@ -155,7 +155,7 @@ function readSessionBashCommands() {
 // ─── Gemini call ─────────────────────────────────────────────────────────────
 
 async function analyzeWithGemini(logContent) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   const prompt = `You are a security analyst reviewing AI coding tool logs for a developer.
 
@@ -195,21 +195,26 @@ ${logContent}
   const estimatedTokens = Math.round(prompt.length / CHARS_PER_TOKEN);
   console.log(`\n📊 Sending ~${estimatedTokens.toLocaleString()} tokens to Gemini...`);
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 4096,
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Gemini API error ${res.status}: ${err}`);
+  let res;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 65536 },
+      }),
+    });
+    if (res.ok) break;
+    const errBody = await res.json().catch(() => ({}));
+    const retryDelay = errBody?.error?.details?.find(d => d.retryDelay)?.retryDelay;
+    if (res.status === 429 && attempt < 3) {
+      const wait = retryDelay ? parseInt(retryDelay) * 1000 : 15000;
+      console.log(`⏳ Rate limit hit, retrying in ${wait/1000}s... (attempt ${attempt}/3)`);
+      await new Promise(r => setTimeout(r, wait));
+    } else {
+      throw new Error(`Gemini API error ${res.status}: ${JSON.stringify(errBody).slice(0,300)}`);
+    }
   }
 
   const data = await res.json();
