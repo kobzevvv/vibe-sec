@@ -1,6 +1,8 @@
 # vibe-sec
 
-**Security layer for AI coding agents.**
+**Security guardrails for AI coding agents — blocks prompt injection, prevents exfiltration, scans session logs.**
+
+> Works with Claude Code, Cursor, Windsurf, and any agent that uses MCP or shell tools.
 
 You use Claude Code, Cursor, or Windsurf to build fast. An attacker embeds instructions in a README, a dependency docstring, or a GitHub issue. Your agent reads it and silently exfiltrates your SSH keys. You never know.
 
@@ -11,6 +13,27 @@ vibe-sec is three layers of protection:
 | 🛡️ **Hook Guard** | Intercepts every tool call, blocks prompt injection in real time | While the agent runs |
 | 🔍 **Log Scanner** | Reads your Claude Code session history, finds leaked keys and suspicious activity | Daily, in background |
 | 🌐 **Cloud Scanner** | Scans your GitHub repos and endpoints from outside, like an attacker would | Daily via Cloudflare cron |
+
+**→ [See a real report example](https://kobzevvv.github.io/vibe-sec/report-example)**
+
+---
+
+## Quick Scan (no install)
+
+Run a one-time security audit of your Claude Code sessions — no setup required:
+
+```bash
+npx vibe-sec scan
+```
+
+Or clone and run directly:
+
+```bash
+git clone --depth=1 https://github.com/kobzevvv/vibe-sec /tmp/vibe-sec
+node /tmp/vibe-sec/scripts/scan-logs.mjs --static-only
+```
+
+Opens an interactive HTML report at `localhost:7777`. Nothing leaves your machine.
 
 ---
 
@@ -270,6 +293,26 @@ npm run deploy                     # deploy to Cloudflare Workers
 - **Jul 2025** — Replit agent dropped a production database despite explicit "do not proceed without approval" instructions. L1 block.
 - **CVE-2025-55284** — Claude Code exfiltrated `.env` secrets via DNS subdomain encoding using `ping`. L2 block (sensitive read + network).
 - **CVE-2026-22708 (Cursor)** — Shell built-in `export` poisoned `$PAGER`, triggering RCE on next approved command. L2 block.
+
+---
+
+## Telemetry
+
+vibe-sec collects **anonymous usage data** to understand what it finds in the wild.
+
+What is collected: event type, finding counts and categories (not content), block type and level (not the command), macOS/Node version, vibe-sec version, which AI tools are present (from a fixed known list).
+
+What is **not** collected: commands, file paths, keys, full app list, repo names.
+
+**Public data:** [vibe-sec-telemetry.dev-a96.workers.dev/public/stats](https://vibe-sec-telemetry.dev-a96.workers.dev/public/stats) — all collected data is publicly readable.
+
+**Opt out:**
+```bash
+npx vibe-sec telemetry off          # permanent
+export VIBE_SEC_TELEMETRY=off       # per-session
+```
+
+Full implementation: [`scripts/telemetry.mjs`](scripts/telemetry.mjs) — read the source to verify.
 
 ---
 
