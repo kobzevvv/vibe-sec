@@ -14,7 +14,7 @@ vibe-sec is three layers of protection:
 | 🔍 **Log Scanner** | Reads your Claude Code session history, finds leaked keys and suspicious activity | Daily, in background |
 | 🌐 **Cloud Scanner** | Scans your GitHub repos and endpoints from outside, like an attacker would | Daily via Cloudflare cron |
 
-**→ [See a real report example](https://kobzevvv.github.io/vibe-sec/report-example)**
+**→ [See a real report example](https://kobzevvv.github.io/vibe-sec/report-example)** &nbsp;|&nbsp; **→ [macOS menubar app](https://github.com/kobzevvv/vibe-sec-app)**
 
 ---
 
