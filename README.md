@@ -26,7 +26,13 @@ Run a one-time security audit of your Claude Code sessions — no setup required
 npx vibe-sec scan
 ```
 
-Or clone and run directly:
+Don't trust npm? Run directly from GitHub — inspect the source first:
+
+```bash
+npx -p github:kobzevvv/vibe-sec vibe-sec scan
+```
+
+Or clone and run:
 
 ```bash
 git clone --depth=1 https://github.com/kobzevvv/vibe-sec /tmp/vibe-sec
@@ -74,13 +80,24 @@ Three protection levels, all under 5ms:
 
 ### Install
 
+**Quick (from npm):**
+```bash
+npx vibe-sec setup
+```
+
+**From GitHub (verify the source):**
+```bash
+npx -p github:kobzevvv/vibe-sec vibe-sec setup
+```
+
+**Or clone and install manually:**
 ```bash
 git clone https://github.com/kobzevvv/vibe-sec
 cd vibe-sec
 npm run install-hooks
 ```
 
-Hook is now active in every Claude Code session — current and future.
+Hook is now active in every Claude Code session — current and future. Survives restarts, under 5ms per check.
 
 To verify:
 ```bash
@@ -89,7 +106,7 @@ cat ~/.claude/settings.json | grep hook
 
 To remove:
 ```bash
-npm run remove-hooks
+npx vibe-sec uninstall
 ```
 
 ### What Happens When Something Is Blocked
