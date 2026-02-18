@@ -412,7 +412,12 @@ function checkClaudeSettings() {
 ${protectionLevels(
   'In `~/.claude/settings.json`, set `"skipDangerousModePermissionPrompt": false` — Claude will pause and ask before running risky commands.',
   { claudeNote: true }
-)}`,
+)}
+
+**Or just remove it right now** — the most reliable option, takes 5 seconds:
+\`\`\`bash
+sed -i '' '/skipDangerousModePermissionPrompt/d' ~/.claude/settings.json
+\`\`\``,
     });
   }
 
