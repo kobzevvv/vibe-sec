@@ -140,6 +140,36 @@ Location: github.com/your-username/old-project/blob/HEAD/config.js
 
 ---
 
+---
+
+## Bonus: Scan your local Claude Code logs
+
+If you use Claude Code, your session logs may contain accidentally pasted tokens or exposed domains. This local scanner reads `~/.claude/` logs and uses **Gemini 1.5 Flash** (1M token context) to analyze them for threats.
+
+```bash
+# Install dependencies
+npm install
+
+# Run (will prompt for Gemini API key if not set)
+npm run scan-logs
+
+# Or with key directly
+GEMINI_API_KEY=your_key npm run scan-logs
+```
+
+Get a free Gemini API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+
+What it scans:
+- **Prompt history** — tokens/keys accidentally pasted into Claude prompts
+- **Debug logs** — suspicious domains, URLs, auth activity across your sessions
+- **Bash commands** — credentials that appeared in terminal commands run by Claude
+
+Output: a Markdown threat report with findings by severity — **without reproducing the actual secret values**.
+
+> Your logs never leave your machine. The script reads `~/.claude/` locally, extracts only security-relevant lines, and sends a filtered summary to the Gemini API.
+
+---
+
 ## Why Cloudflare Workers?
 
 - **External perspective**: scans from Cloudflare's global network, not localhost

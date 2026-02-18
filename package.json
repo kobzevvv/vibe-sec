@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "scan": "node scripts/scan-local.mjs"
+    "scan-logs": "node scripts/scan-logs.mjs"
   },
   "devDependencies": {
     "wrangler": "^3.100.0",
