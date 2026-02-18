@@ -188,7 +188,18 @@ Respond in this format:
 - **Found in**: [session/date/file]
 - **What happened**: [description without actual secret value]
 - **Risk**: [what could happen]
-- **Fix**: [concrete action to take]
+- **Fix**: Rotate immediately. Then store safely in macOS Keychain:
+  \`\`\`bash
+  # Store (run once, it will prompt for the value):
+  security add-generic-password -s "[service-name]" -a "$USER" -w
+
+  # Retrieve in shell / .zshrc:
+  export [VAR_NAME]=$(security find-generic-password -s "[service-name]" -a "$USER" -w)
+  \`\`\`
+  Add to your CLAUDE.md so agents know where to get it:
+  \`[VAR_NAME] is stored in macOS Keychain under service "[service-name]". Retrieve with: security find-generic-password -s "[service-name]" -a "$USER" -w\`
+
+Fill in [service-name] with a descriptive name (e.g. "openai-api-key", "stripe-secret-key") and [VAR_NAME] with the env var name (e.g. OPENAI_API_KEY).
 
 If no issues found in this chunk, write: "No issues found in this chunk."
 
@@ -310,6 +321,34 @@ function mergeChunkReports(chunkResults) {
       lines.push("");
     }
   }
+
+  // Add Keychain quick-reference
+  lines.push(`---`);
+  lines.push(`## 🔑 Store all secrets in macOS Keychain`);
+  lines.push(``);
+  lines.push(`For each rotated key, run once:`);
+  lines.push(`\`\`\`bash`);
+  lines.push(`security add-generic-password -s "openai-api-key"   -a "$USER" -w   # OpenAI`);
+  lines.push(`security add-generic-password -s "anthropic-api-key" -a "$USER" -w  # Anthropic/Claude`);
+  lines.push(`security add-generic-password -s "stripe-secret-key" -a "$USER" -w  # Stripe`);
+  lines.push(`security add-generic-password -s "github-token"      -a "$USER" -w  # GitHub`);
+  lines.push(`# etc. — use any descriptive service name`);
+  lines.push(`\`\`\``);
+  lines.push(``);
+  lines.push(`Load in your shell (\`~/.zshrc\` or \`~/.bashrc\`):`);
+  lines.push(`\`\`\`bash`);
+  lines.push(`export OPENAI_API_KEY=$(security find-generic-password -s "openai-api-key" -a "$USER" -w)`);
+  lines.push(`export ANTHROPIC_API_KEY=$(security find-generic-password -s "anthropic-api-key" -a "$USER" -w)`);
+  lines.push(`\`\`\``);
+  lines.push(``);
+  lines.push(`Tell your AI agents in \`~/.claude/CLAUDE.md\`:`);
+  lines.push(`\`\`\``);
+  lines.push(`## Secret Management`);
+  lines.push(`All API keys are stored in macOS Keychain, NOT in .env files.`);
+  lines.push(`To retrieve a key: security find-generic-password -s "<service-name>" -a "$USER" -w`);
+  lines.push(`Example: security find-generic-password -s "openai-api-key" -a "$USER" -w`);
+  lines.push(`Never ask me to paste keys directly into prompts — fetch from Keychain instead.`);
+  lines.push(`\`\`\``);
 
   return lines.join("\n");
 }
