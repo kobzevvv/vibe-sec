@@ -13,6 +13,11 @@
  */
 
 import fs from "fs";
+
+// HTML escape to prevent XSS in rendered content
+function escHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 import path from "path";
 import http from "http";
 import { execSync } from "child_process";
@@ -883,10 +888,12 @@ const server = http.createServer((req, res) => {
       body += c;
       if (body.length > MAX_BODY) {
         req.destroy();
-        res.writeHead(413).end("payload too large");
+        if (!res.writableEnded) res.writeHead(413).end("payload too large");
+        return;
       }
     });
     req.on("end", () => {
+      if (res.writableEnded) return; // already responded (e.g. 413)
       try {
         const { id, data } = JSON.parse(body);
         // Prevent prototype pollution attacks
@@ -955,9 +962,9 @@ h1 { color:#e0e0e4; font-size:1.1rem; margin-bottom:4px; font-weight:600; letter
           const { ts, event, ...rest } = entry;
           const cls = event.includes("gemini") ? "gemini" : event.includes("static") ? "static" : "scan";
           const props = Object.entries(rest)
-            .map(([k, v]) => `<span style="color:#444">${k}:</span> <span style="color:#aaa">${Array.isArray(v) ? v.join(", ") : v}</span>`)
+            .map(([k, v]) => `<span style="color:#444">${escHtml(k)}:</span> <span style="color:#aaa">${escHtml(Array.isArray(v) ? v.join(", ") : v)}</span>`)
             .join(" &nbsp;·&nbsp; ");
-          auditHtml += `<div class="entry ${cls}"><span class="ts">${ts}</span><span class="event">${event}</span><div class="props">${props}</div></div>`;
+          auditHtml += `<div class="entry ${escHtml(cls)}"><span class="ts">${escHtml(ts)}</span><span class="event">${escHtml(event)}</span><div class="props">${props}</div></div>`;
         } catch {}
       }
     } catch {

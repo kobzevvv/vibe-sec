@@ -44,7 +44,7 @@ try {
   const lines = fs.readFileSync(ALLOWLIST_FILE, "utf8").split("\n");
   for (const line of lines) {
     const t = line.trim();
-    if (t && !t.startsWith("#")) {
+    if (t && !t.startsWith("#") && t.length <= 500) { // length limit to prevent ReDoS
       try { allowPatterns.push(new RegExp(t)); } catch { /* skip invalid */ }
     }
   }

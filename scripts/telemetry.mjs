@@ -278,8 +278,9 @@ export async function flushQueue() {
       .filter(Boolean)
       .map(l => { try { return JSON.parse(l); } catch { return null; } })
       .filter(Boolean);
-    fs.writeFileSync(QUEUE, ""); // clear queue before sending (prevent duplicates on failure)
   } catch { return; } // no queue or empty
+
+  if (entries.length === 0) return;
 
   const base = {
     device_id:    getOrCreateDeviceId(),
@@ -292,6 +293,9 @@ export async function flushQueue() {
     const { _queued_at, ...props } = entry;
     await send({ ...base, ts: _queued_at || new Date().toISOString(), ...props });
   }
+
+  // Clear queue AFTER successful send (prevents data loss on crash)
+  try { fs.writeFileSync(QUEUE, ""); } catch {}
 }
 
 // ─── Direct track ─────────────────────────────────────────────────────────────
