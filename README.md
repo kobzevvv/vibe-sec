@@ -14,7 +14,7 @@ vibe-sec is three layers of protection:
 | 🔍 **Log Scanner** | Reads your Claude Code session history, finds leaked keys and suspicious activity | Daily, in background |
 | 🌐 **Cloud Scanner** | Scans your GitHub repos and endpoints from outside, like an attacker would | Daily via Cloudflare cron |
 
-**→ [See a real report example](https://kobzevvv.github.io/vibe-sec/report-example)** &nbsp;|&nbsp; **→ [macOS menubar app](https://github.com/kobzevvv/vibe-sec-app)**
+**→ [See a real report example](https://kobzevvv.github.io/vibe-sec/report-example.html)** &nbsp;|&nbsp; **→ [macOS menubar app](https://github.com/kobzevvv/vibe-sec-app)** &nbsp;|&nbsp; **→ [Windows tray app](https://github.com/kobzevvv/vibe-sec-app-win)**
 
 ---
 
@@ -235,11 +235,12 @@ Scanner runs daily at 9am UTC via cron. Access reports at `https://vibe-sec.<you
 
 ---
 
-## macOS Menubar App
+## Desktop Apps
 
-Native status bar app — always-visible security score, scan on demand, instant alerts.
+Native status bar / tray app — always-visible security score, scan on demand, instant alerts.
 
-**→ [github.com/kobzevvv/vibe-sec-app](https://github.com/kobzevvv/vibe-sec-app)**
+**→ macOS: [github.com/kobzevvv/vibe-sec-app](https://github.com/kobzevvv/vibe-sec-app)**
+**→ Windows: [github.com/kobzevvv/vibe-sec-app-win](https://github.com/kobzevvv/vibe-sec-app-win)**
 
 ### Install options
 
@@ -361,6 +362,16 @@ export VIBE_SEC_TELEMETRY=off       # per-session
 ```
 
 Full implementation: [`scripts/telemetry.mjs`](scripts/telemetry.mjs) — read the source to verify.
+
+---
+
+## Related Projects
+
+| Project | Platform | Description |
+|---------|----------|-------------|
+| [vibe-sec-app](https://github.com/kobzevvv/vibe-sec-app) | macOS | Menubar app |
+| [vibe-sec-app-win](https://github.com/kobzevvv/vibe-sec-app-win) | Windows | System tray app |
+| [vibe-sec-dirty-machine](https://github.com/kobzevvv/vibe-sec-dirty-machine) | All | Test fixtures (fake secrets) |
 
 ---
 
