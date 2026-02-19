@@ -1,4 +1,0 @@
-# Copied from .env file on 2026-02-15
-API_KEY=sk-fake-paste-secret-key-1234567890abcdef
-DATABASE_PASSWORD=FakePastePassword123!
-STRIPE_SECRET_KEY=sk_live_TESTFIXTURE_paste_not_real

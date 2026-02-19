@@ -1,2 +1,0 @@
-OPENAI_API_KEY=sk-TESTFIXTURE_openai_paste
-ANTHROPIC_API_KEY=sk-ant-TESTFIXTURE_anthropic_paste

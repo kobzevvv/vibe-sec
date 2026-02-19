@@ -10,6 +10,3 @@ vibe-sec-*.json
 vibe-sec-*.md
 vibe-sec-*.html
 
-# Dirty machine backups
-test/dirty-machine/.backup-*
-test/dirty-machine/.setup-manifest
