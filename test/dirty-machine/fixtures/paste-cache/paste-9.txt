@@ -1,0 +1,1 @@
+SECRET_KEY=fakeSecretKeyInPaste9_1234567890abcdefghij

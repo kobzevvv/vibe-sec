@@ -1,0 +1,18 @@
+: 1739700000:0;cd ~/Documents/GitHub/my-app
+: 1739700100:0;npm install
+: 1739700200:0;export OPENAI_API_KEY=sk-proj-TESTFIXTURE_openai_history
+: 1739700300:0;curl -H "Authorization: Bearer ghp_TESTFIXTURE_github_pat" https://api.github.com/user
+: 1739700400:0;export AWS_ACCESS_KEY_ID=AKIAFAKEACCESSKEYID1
+: 1739700500:0;export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/fakeSecretAccessKey123
+: 1739700600:0;git push origin main
+: 1739700700:0;ANTHROPIC_API_KEY=sk-ant-TESTFIXTURE_anthropic_history
+: 1739700800:0;npm run build
+: 1739700900:0;curl -H "Authorization: Bearer sk_live_TESTFIXTURE_history" https://api.stripe.com/v1/charges
+: 1739701000:0;export NEON_API_KEY=napi_fakeNeonApiKey1234567890abc
+: 1739701100:0;fly deploy --app my-app
+: 1739701200:0;export SLACK_BOT_TOKEN=xoxb-fake-000000-TESTFIXTURE_not_real_slack_token
+: 1739701300:0;docker compose up -d
+: 1739701400:0;export GITLAB_PAT=glpat-TESTFIXTURE_gitlab_pat
+: 1739701500:0;ssh deploy@prod-server.example.com
+: 1739701600:0;PASSWORD=SuperSecret123! npm run migrate
+: 1739701700:0;ls -la

@@ -1,0 +1,33 @@
+{
+  "channels": {
+    "telegram": {
+      "botToken": "1234567890:AAFake-BotToken_TestOnly_DoNotUseInProd",
+      "allowedSenders": [123456789]
+    }
+  },
+  "gateway": {
+    "bind": "0.0.0.0",
+    "port": 18789,
+    "auth": {
+      "token": "fake-gateway-token-12345-do-not-use"
+    },
+    "tailscale": {
+      "mode": "off"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "workspace": "/Users/testuser/clawd",
+      "model": "claude-sonnet-4-20250514"
+    }
+  },
+  "hooks": {
+    "internal": {
+      "entries": {
+        "session-memory": {
+          "enabled": true
+        }
+      }
+    }
+  }
+}

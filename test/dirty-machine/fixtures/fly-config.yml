@@ -1,0 +1,7 @@
+# Fly.io CLI configuration
+access_token: fo1_fakeTokenValue1234567890abcdefghijklmnopqrstuvwxyz
+wire_guard_state:
+  peer:
+    public_key: "fakePubKeyForTestOnly1234567890abcdef="
+    endpoint: "fake-gateway.fly.dev:51821"
+    network: "fdaa:0:fake::/48"

@@ -1,0 +1,77 @@
+name: Dirty Machine Test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/scan-logs.mjs'
+      - 'test/dirty-machine/**'
+
+jobs:
+  dirty-machine-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+    name: Test on ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Git identity (for fixture git repo)
+        run: |
+          git config --global user.email "test@vibe-sec.dev"
+          git config --global user.name "vibe-sec test"
+
+      # ─── macOS setup ─────────────────────────────────────────────────
+      - name: Setup dirty environment (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          chmod +x test/dirty-machine/setup-macos.sh
+          bash test/dirty-machine/setup-macos.sh
+
+      # ─── Windows setup ──────────────────────────────────────────────
+      - name: Setup dirty environment (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          .\test\dirty-machine\setup-windows.ps1
+
+      # ─── Run scanner ────────────────────────────────────────────────
+      - name: Run vibe-sec static scanner
+        run: node scripts/scan-logs.mjs --static-only
+        env:
+          # No GEMINI_API_KEY needed for --static-only
+          CI: true
+
+      # ─── Upload report ──────────────────────────────────────────────
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vibe-sec-report-${{ matrix.os }}
+          path: |
+            vibe-sec-log-report-*.html
+            vibe-sec-log-report-*.md
+          retention-days: 30
+
+      # ─── Teardown ───────────────────────────────────────────────────
+      - name: Teardown dirty environment (macOS)
+        if: always() && runner.os == 'macOS'
+        run: |
+          chmod +x test/dirty-machine/teardown.sh
+          bash test/dirty-machine/teardown.sh
+
+      - name: Teardown dirty environment (Windows)
+        if: always() && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          .\test\dirty-machine\teardown.ps1
