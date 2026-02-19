@@ -768,16 +768,27 @@ function checkGitSecurity() {
   }
 
   const envTrackedRepos = [];
+  const envTemplateRepos = [];
   const historySecretRepos = [];
 
   for (const repo of gitRepos) {
-    // Check .env tracked in git
+    // Check .env tracked in git (skip templates/examples — those are meant to be committed)
     try {
       const tracked = execSync(
         `git -C "${repo}" ls-files -- "*.env" ".env" ".env.*" 2>/dev/null`,
         { encoding: "utf8", timeout: 5000 }
       ).trim();
-      if (tracked) envTrackedRepos.push(`${path.basename(repo)}: ${tracked.split("\n").join(", ")}`);
+      if (tracked) {
+        const TEMPLATE_PATTERNS = /\.(template|example|sample|defaults|schema|dist)$/i;
+        const realEnvFiles = tracked.split("\n").filter(f => f && !TEMPLATE_PATTERNS.test(f));
+        const templateFiles = tracked.split("\n").filter(f => f && TEMPLATE_PATTERNS.test(f));
+        if (realEnvFiles.length > 0) {
+          envTrackedRepos.push(`${path.basename(repo)}: ${realEnvFiles.join(", ")}`);
+        }
+        if (templateFiles.length > 0) {
+          envTemplateRepos.push(`${path.basename(repo)}: ${templateFiles.join(", ")}`);
+        }
+      }
     } catch {}
 
     // Check for secret patterns in recent git history (last 100 commits)
@@ -806,6 +817,9 @@ git commit -m "remove .env from tracking"
 \`\`\``,
     });
   }
+
+  // Template/example .env files — safe to track, just note them as OK
+  // (not a finding — these are intentional and don't contain real secrets)
 
   if (historySecretRepos.length > 0) {
     findings.push({
