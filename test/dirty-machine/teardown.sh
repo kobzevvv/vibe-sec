@@ -41,7 +41,7 @@ if [ -f "$MANIFEST" ]; then
       if [ -f "$target" ]; then
         # Remove everything between our markers
         if grep -q "vibe-sec dirty machine test data START" "$target" 2>/dev/null; then
-          sed -i '' '/# --- vibe-sec dirty machine test data START ---/,/# --- vibe-sec dirty machine test data END ---/d' "$target"
+          LC_ALL=C sed -i '' '/# --- vibe-sec dirty machine test data START ---/,/# --- vibe-sec dirty machine test data END ---/d' "$target"
           echo -e "  ${GREEN}CLEANED${NC}: $target (removed appended test data)"
         fi
       fi
