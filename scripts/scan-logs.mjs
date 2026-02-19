@@ -69,6 +69,36 @@ const SKIP = new Set(
 const sourceArg = process.argv.find((a, i) => process.argv[i - 1] === "--source");
 const SCAN_SOURCE = sourceArg || (process.env.VIBE_SEC_DAEMON === "1" ? "daemon" : "cli");
 
+// ─── Placeholder / fake credential detection ─────────────────────────────────
+// Detects values that look like example/placeholder credentials, not real secrets.
+// This prevents false positives on .env.example, documentation, test fixtures, etc.
+
+const PLACEHOLDER_WORDS = /(?:your[_-]?(?:key|token|secret|password|api)|change[_-]?me|replace[_-]?me|insert[_-]?here|put[_-]?here|todo|fixme|placeholder|example|sample|dummy|fake|test(?:ing)?|xxx+|\.\.\.+|___+)/i;
+
+const PLACEHOLDER_PATTERNS = [
+  // Values that are literally "your_key_here", "changeme", etc.
+  (val) => PLACEHOLDER_WORDS.test(val),
+  // Values like sk_live_your_key_here or sk-proj-example123
+  (val) => /^(?:sk[_-](?:live|test|proj|ant)|ghp_|gho_|glpat-|xoxb-|AKIA|napi_|fly_)/.test(val) && PLACEHOLDER_WORDS.test(val),
+  // All same character repeated: "xxxxxxxxxxxx", "000000000000"
+  (val) => val.length >= 8 && /^(.)\1+$/.test(val),
+  // Obviously templated: ${VAR}, <TOKEN>, [KEY]
+  (val) => /^\$\{|^<[A-Z_]+>$|^\[[A-Z_]+\]$/.test(val),
+  // Ends with common placeholder suffixes
+  (val) => /(?:_here|_this|_goes_here|_placeholder|_example)$/i.test(val),
+];
+
+/**
+ * Returns true if a secret value looks like a placeholder/example, not a real credential.
+ * @param {string} value - The secret value to check
+ * @returns {boolean}
+ */
+function looksLikePlaceholder(value) {
+  if (!value || value.length < 4) return true; // too short to be real
+  const trimmed = value.trim().replace(/^["']|["']$/g, ""); // strip quotes
+  return PLACEHOLDER_PATTERNS.some(fn => fn(trimmed));
+}
+
 // ─── Audit log ────────────────────────────────────────────────────────────────
 
 function auditLog(entry) {
@@ -603,7 +633,7 @@ sed -i '' '/skipDangerousModePermissionPrompt/d' ~/.claude/settings.json
   for (const [name, cfg] of Object.entries(mcpServers)) {
     const cfgStr = JSON.stringify(cfg);
     const tokenMatch = cfgStr.match(/"([A-Z][A-Z_0-9]*(?:TOKEN|KEY|SECRET|API_KEY|PASS)[A-Z_0-9]*)"\s*:\s*"([^"]{8,})"/i);
-    if (tokenMatch) {
+    if (tokenMatch && !looksLikePlaceholder(tokenMatch[2])) {
       const [, varName, val] = tokenMatch;
       findings.push({
         icon: "⚠️",
@@ -680,6 +710,10 @@ function checkShellHistorySecrets() {
       const clean = line.replace(/^:\s*\d+:\d+;/, "").trim(); // strip zsh metadata prefix
       if (!clean) continue;
       if (secretLinePattern.test(clean) || knownPrefixes.some(re => re.test(clean))) {
+        // Extract the value after = or : and check if it's a placeholder
+        const valMatch = clean.match(/[=:]\s*["']?([^\s"']+)/);
+        if (valMatch && looksLikePlaceholder(valMatch[1])) continue; // skip example/fake values
+
         matchCount++;
         if (examples.length < 3) {
           const masked = clean
@@ -793,11 +827,14 @@ function checkGitSecurity() {
 
     // Check for secret patterns in recent git history (last 100 commits)
     try {
-      const count = execSync(
-        `git -C "${repo}" log --all -p --max-count=100 2>/dev/null | grep -cE "(sk-[a-zA-Z0-9]{20,}|AKIA[A-Z0-9]{16}|ghp_[a-zA-Z0-9]{36}|napi_[a-zA-Z0-9]{20,})" 2>/dev/null || echo 0`,
+      const matches = execSync(
+        `git -C "${repo}" log --all -p --max-count=100 2>/dev/null | grep -oE "(sk-[a-zA-Z0-9]{20,}|AKIA[A-Z0-9]{16}|ghp_[a-zA-Z0-9]{36}|napi_[a-zA-Z0-9]{20,})" 2>/dev/null || true`,
         { encoding: "utf8", timeout: 12000, maxBuffer: 50 * 1024 * 1024 }
       ).trim();
-      if (parseInt(count) > 0) historySecretRepos.push(path.basename(repo));
+      if (matches) {
+        const realSecrets = matches.split("\n").filter(m => m && !looksLikePlaceholder(m));
+        if (realSecrets.length > 0) historySecretRepos.push(path.basename(repo));
+      }
     } catch {}
   }
 
@@ -928,10 +965,14 @@ function checkPasteAndSnapshots() {
         for (const f of files.slice(0, sampleSize)) {
           try {
             const content = fs.readFileSync(path.join(pasteDir, f), "utf8");
-            if (/(?:KEY|TOKEN|SECRET|PASSWORD|API)[^=\n]*=[^=\s]{8,}/i.test(content) ||
-              /sk-[a-zA-Z0-9]{20,}|AKIA[A-Z0-9]{16}|ghp_[a-zA-Z0-9]{36}/i.test(content)) {
-              withSecrets++;
-            }
+            // Check for secret patterns, but filter out placeholder/example values
+            const secretPattern = /(?:KEY|TOKEN|SECRET|PASSWORD|API)[^=\n]*=\s*["']?([^=\s"']{8,})/i;
+            const prefixPattern = /(?:sk-[a-zA-Z0-9]{20,}|AKIA[A-Z0-9]{16}|ghp_[a-zA-Z0-9]{36})/i;
+            const secretMatch = content.match(secretPattern);
+            const prefixMatch = content.match(prefixPattern);
+            const hasRealSecret = (secretMatch && !looksLikePlaceholder(secretMatch[1])) ||
+              (prefixMatch && !looksLikePlaceholder(prefixMatch[0]));
+            if (hasRealSecret) withSecrets++;
           } catch {}
         }
         const icon = withSecrets > 0 ? "⚠️" : "💡";
