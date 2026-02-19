@@ -812,9 +812,9 @@ document.getElementById("modal").addEventListener("click", e => {
   const all = [...critical, ...high];
   if (all.length === 0) return;
 
-  // Anchor target: first blockquote (the "N critical/high issues found" callout)
-  const blockquote = document.querySelector('blockquote');
-  if (!blockquote) return;
+  // Anchor target: insert just before Risk Summary (after Status section)
+  const riskSummary = document.getElementById('risk-summary');
+  if (!riskSummary) return;
 
   function getTitle(el) {
     const h4 = el.querySelector('h4');
@@ -845,8 +845,8 @@ document.getElementById("modal").addEventListener("click", e => {
   }
   nav.innerHTML = html;
 
-  // Insert after the blockquote
-  blockquote.insertAdjacentElement('afterend', nav);
+  // Insert before Risk Summary heading
+  riskSummary.insertAdjacentElement('beforebegin', nav);
 
   // Flash the target card when navigating via anchor
   nav.addEventListener('click', e => {

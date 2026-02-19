@@ -29,7 +29,7 @@ if (REMOVE) {
   spawnSync("launchctl", ["unload", PLIST_PATH], { stdio: "inherit" });
   try { fs.unlinkSync(PLIST_PATH); } catch { /* ok */ }
   try { fs.unlinkSync(SCRIPT_PATH); } catch { /* ok */ }
-  console.log("✅ vibe-sec daemon остановлен и удалён.");
+  console.log("✅ vibe-sec daemon stopped and removed.");
   process.exit(0);
 }
 
@@ -88,9 +88,9 @@ log(\`Score: \${score} (prev: \${prev})\`);
 if (score !== prev) {
   const title   = score === "0" ? "vibe-sec ✅" : "vibe-sec 🔍";
   const body    = score === "0"
-    ? "Всё чисто, угроз не найдено"
-    : \`Найдено проблем: \${score} — запусти npm run report\`;
-  const subtitle = "Ежечасная проверка";
+    ? "All clear, no threats found"
+    : \`Issues found: \${score} — run npm run report\`;
+  const subtitle = "Daily security scan";
   spawnSync("osascript", ["-e",
     \`display notification \${JSON.stringify(body)} with title \${JSON.stringify(title)} subtitle \${JSON.stringify(subtitle)}\`
   ], { stdio: "ignore" });
@@ -140,19 +140,19 @@ fs.writeFileSync(PLIST_PATH, plist);
 const result = spawnSync("launchctl", ["load", PLIST_PATH], { stdio: "pipe" });
 if (result.status !== 0) {
   console.error("⚠️  launchctl load failed:", result.stderr?.toString());
-  console.log(`Файл создан, попробуй вручную:\n  launchctl load ${PLIST_PATH}`);
+  console.log(`File created, try manually:\n  launchctl load ${PLIST_PATH}`);
   process.exit(1);
 }
 
 console.log(`
-✅ vibe-sec фоновый сканер установлен!
+✅ vibe-sec background scanner installed!
 
-Расписание: каждый час + при логине
-Первый запуск: через несколько секунд
-Логи:         ${LOG_DIR}/daemon.log
-Отчёт:        npm run report
+Schedule: daily + on login
+First run: in a few seconds
+Logs:      ${LOG_DIR}/daemon.log
+Report:    npm run report
 
-Уведомления: macOS notification при изменении счёта безопасности
+Notifications: macOS notification when security score changes
 
-Остановить:   npm run remove-daemon
+Stop:      npm run remove-daemon
 `);

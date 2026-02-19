@@ -1,7 +1,42 @@
 {
   "name": "vibe-sec",
   "version": "0.1.0",
+  "description": "Security guardrails for AI coding agents — blocks prompt injection, prevents exfiltration, scans Claude Code session logs",
+  "keywords": [
+    "prompt-injection",
+    "agent-security",
+    "claude-code",
+    "mcp-security",
+    "ai-safety",
+    "guardrails",
+    "hook-guard",
+    "tool-poisoning",
+    "indirect-injection",
+    "agentic-ai",
+    "ai-agent",
+    "security",
+    "cursor",
+    "windsurf",
+    "llm-security",
+    "command-injection",
+    "ai-coding-agent",
+    "vibe-coding",
+    "mcp",
+    "scanner"
+  ],
+  "license": "MIT",
   "private": false,
+  "type": "module",
+  "bin": {
+    "vibe-sec": "./bin/vibe-sec.mjs"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "examples/",
+    "wrangler.toml",
+    "src/"
+  ],
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

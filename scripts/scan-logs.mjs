@@ -1736,49 +1736,439 @@ proc.stdin.write(initMsg + '\\n');
   return findings;
 }
 
+function checkSshKeysSecurity() {
+  const findings = [];
+  try {
+    const sshDir = path.join(os.homedir(), ".ssh");
+    if (!fs.existsSync(sshDir)) return [];
+
+    const files = fs.readdirSync(sshDir).filter(f => f.startsWith("id_") && !f.endsWith(".pub"));
+    const unencrypted = [];
+    const oldRsa = [];
+
+    for (const file of files) {
+      try {
+        const filePath = path.join(sshDir, file);
+        const content = fs.readFileSync(filePath, "utf8");
+        const header = content.split("\n").slice(0, 5).join("\n");
+
+        if (!header.includes("ENCRYPTED")) {
+          unencrypted.push(file);
+        }
+        if (header.includes("-----BEGIN RSA PRIVATE KEY-----")) {
+          oldRsa.push(file);
+        }
+      } catch { /* skip unreadable keys */ }
+    }
+
+    if (unencrypted.length > 0) {
+      findings.push({
+        icon: "⚠️",
+        title: `SSH keys without passphrase: ${unencrypted.length} key(s)`,
+        body: `- **Found**: ${unencrypted.map(k => `\`~/.ssh/${k}\``).join(", ")} — no passphrase protection
+- **What this means**: If malware or an attacker gains read access to your home directory, these keys can be used immediately without any additional authentication.
+- **Nightmare scenario**: A malicious npm package reads \`~/.ssh/id_ed25519\` and exfiltrates it — instant access to all your GitHub repos, servers, and infrastructure.
+- **Fix**: Add a passphrase to existing keys:
+\`\`\`bash
+ssh-keygen -p -f ~/.ssh/${unencrypted[0]}
+\`\`\``,
+      });
+    }
+
+    if (oldRsa.length > 0) {
+      findings.push({
+        icon: "💡",
+        title: `SSH keys using legacy RSA format: ${oldRsa.length} key(s)`,
+        body: `- **Found**: ${oldRsa.map(k => `\`~/.ssh/${k}\``).join(", ")} — old PEM RSA format
+- **What this means**: Legacy RSA keys use an older format with weaker key derivation. Ed25519 keys are faster, smaller, and more secure.
+- **Fix**: Generate a modern Ed25519 key:
+\`\`\`bash
+ssh-keygen -t ed25519 -C "your_email@example.com"
+\`\`\``,
+      });
+    }
+  } catch { /* silent skip */ }
+  return findings;
+}
+
+function checkGitCredentialStore() {
+  const findings = [];
+  try {
+    const credFile = path.join(os.homedir(), ".git-credentials");
+    let helperIsStore = false;
+
+    try {
+      const helper = execSync("git config --global credential.helper 2>/dev/null", {
+        encoding: "utf8", timeout: 5000,
+      }).trim();
+      helperIsStore = (helper === "store");
+    } catch { /* no helper configured */ }
+
+    const fileExists = fs.existsSync(credFile);
+    let lineCount = 0;
+    if (fileExists) {
+      try {
+        const content = fs.readFileSync(credFile, "utf8").trim();
+        lineCount = content ? content.split("\n").length : 0;
+      } catch {}
+    }
+
+    if (fileExists && lineCount > 0) {
+      findings.push({
+        icon: "⚠️",
+        title: `Git credentials stored in plaintext: ${lineCount} credential(s)`,
+        body: `- **Found**: \`~/.git-credentials\` contains ${lineCount} plaintext credential(s)${helperIsStore ? " (credential.helper = store)" : ""}
+- **What this means**: Git usernames and tokens/passwords are stored unencrypted on disk. Any process with read access to your home directory can steal them.
+- **Nightmare scenario**: A malicious VS Code extension or npm package reads \`~/.git-credentials\` and gains push access to all your repositories.
+- **Fix**: Switch to macOS Keychain (credentials stored encrypted in system keychain):
+\`\`\`bash
+git config --global credential.helper osxkeychain
+rm ~/.git-credentials
+\`\`\``,
+      });
+    } else if (helperIsStore) {
+      findings.push({
+        icon: "💡",
+        title: "Git credential.helper set to 'store' (plaintext)",
+        body: `- **Found**: \`git config --global credential.helper\` = \`store\` — credentials will be saved in plaintext next time you authenticate
+- **What this means**: While no credentials are stored yet, the next \`git push\` or \`git pull\` that requires auth will save your token in plaintext.
+- **Fix**: Switch to macOS Keychain before your next authentication:
+\`\`\`bash
+git config --global credential.helper osxkeychain
+\`\`\``,
+      });
+    }
+  } catch { /* silent skip */ }
+  return findings;
+}
+
+function checkNgrokTunnels() {
+  const findings = [];
+  try {
+    let ngrokRunning = false;
+    try {
+      const result = execSync("pgrep -x ngrok 2>/dev/null", {
+        encoding: "utf8", timeout: 5000,
+      }).trim();
+      ngrokRunning = result.length > 0;
+    } catch { /* pgrep returns exit code 1 if no match — not running */ }
+
+    if (!ngrokRunning) return [];
+
+    let tunnels = [];
+    try {
+      const apiResp = execSync("curl -s --max-time 3 http://127.0.0.1:4040/api/tunnels 2>/dev/null", {
+        encoding: "utf8", timeout: 5000,
+      });
+      const parsed = JSON.parse(apiResp);
+      if (parsed.tunnels && Array.isArray(parsed.tunnels)) {
+        tunnels = parsed.tunnels.map(t => ({
+          name: t.name || "unnamed",
+          publicUrl: t.public_url || "unknown",
+          localAddr: (t.config && t.config.addr) || "unknown",
+        }));
+      }
+    } catch { /* ngrok API not available, but process is running */ }
+
+    const tunnelList = tunnels.length > 0
+      ? tunnels.map(t => `  - \`${t.publicUrl}\` → \`${t.localAddr}\` (${t.name})`).join("\n")
+      : "  - Could not fetch tunnel details (ngrok API not reachable)";
+
+    findings.push({
+      icon: "⚠️",
+      title: `ngrok tunnel active: ${tunnels.length || "?"} tunnel(s)`,
+      body: `- **Found**: ngrok is running with active tunnels:
+${tunnelList}
+- **What this means**: Your local services are exposed to the public internet via ngrok. Anyone with the URL can access them.
+- **Nightmare scenario**: A dev server with debug mode enabled, exposed via ngrok — an attacker discovers the URL (ngrok URLs are enumerable) and exploits debug endpoints to get RCE.
+- **Fix**: Stop ngrok when not actively needed:
+\`\`\`bash
+pkill ngrok
+\`\`\``,
+    });
+  } catch { /* silent skip */ }
+  return findings;
+}
+
+function checkDockerComposeExposure() {
+  const findings = [];
+  try {
+    const scanRoots = [
+      path.join(os.homedir(), "Documents", "GitHub"),
+      path.join(os.homedir(), "Desktop"),
+      path.join(os.homedir(), "Documents"),
+    ].filter(d => { try { return fs.statSync(d).isDirectory(); } catch { return false; } });
+
+    const composeNames = ["docker-compose.yml", "docker-compose.yaml", "compose.yml"];
+    const exposedPorts = [];
+
+    for (const root of scanRoots) {
+      try {
+        for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+          if (!entry.isDirectory()) continue;
+          const projectDir = path.join(root, entry.name);
+          for (const composeName of composeNames) {
+            const composePath = path.join(projectDir, composeName);
+            if (!fs.existsSync(composePath)) continue;
+            try {
+              const content = fs.readFileSync(composePath, "utf8");
+              const lines = content.split("\n");
+              let inPorts = false;
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed === "ports:") {
+                  inPorts = true;
+                  continue;
+                }
+                if (inPorts) {
+                  if (trimmed.startsWith("-")) {
+                    // Extract port mapping value
+                    const portVal = trimmed.replace(/^-\s*/, "").replace(/['"]/g, "");
+                    // Safe if it starts with 127.0.0.1:
+                    if (!portVal.startsWith("127.0.0.1:")) {
+                      exposedPorts.push({
+                        file: composePath.replace(os.homedir(), "~"),
+                        port: portVal,
+                      });
+                    }
+                  } else if (trimmed && !trimmed.startsWith("#")) {
+                    // Exited ports section (next key)
+                    inPorts = false;
+                  }
+                }
+              }
+            } catch { /* skip unreadable files */ }
+          }
+        }
+      } catch {}
+    }
+
+    if (exposedPorts.length > 0) {
+      const portList = exposedPorts.map(p => `  - \`${p.file}\`: \`${p.port}\``).join("\n");
+      findings.push({
+        icon: "💡",
+        title: `Docker Compose ports exposed to all interfaces: ${exposedPorts.length} mapping(s)`,
+        body: `- **Found**: Port mappings not bound to localhost:
+${portList}
+- **What this means**: When these containers run, their ports will listen on all network interfaces (0.0.0.0), making them accessible to anyone on your network.
+- **Nightmare scenario**: A database container with default credentials, exposed on 0.0.0.0:5432 — anyone on the café WiFi can connect and dump your data.
+- **Fix**: Bind ports to localhost in docker-compose.yml:
+\`\`\`yaml
+ports:
+  - "127.0.0.1:8000:8000"  # instead of "8000:8000"
+\`\`\``,
+      });
+    }
+  } catch { /* silent skip */ }
+  return findings;
+}
+
+function checkTerraformState() {
+  const findings = [];
+  try {
+    const scanRoots = [
+      path.join(os.homedir(), "Documents", "GitHub"),
+      path.join(os.homedir(), "Documents"),
+      path.join(os.homedir(), "Desktop"),
+    ].filter(d => { try { return fs.statSync(d).isDirectory(); } catch { return false; } });
+
+    const secretPatterns = /("password"|"secret"|"token"|"api_key"|"access_key"|"private_key")\s*:\s*"[^"]+"/i;
+    const stateFiles = [];
+
+    for (const root of scanRoots) {
+      try {
+        for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+          if (!entry.isDirectory()) continue;
+          const projectDir = path.join(root, entry.name);
+          const tfState = path.join(projectDir, "terraform.tfstate");
+          if (!fs.existsSync(tfState)) continue;
+
+          let hasSecrets = false;
+          let gitignored = false;
+
+          try {
+            const content = fs.readFileSync(tfState, "utf8");
+            hasSecrets = secretPatterns.test(content);
+          } catch { /* skip unreadable */ }
+
+          // Check if terraform.tfstate is in .gitignore
+          try {
+            const gitignorePath = path.join(projectDir, ".gitignore");
+            if (fs.existsSync(gitignorePath)) {
+              const gitignoreContent = fs.readFileSync(gitignorePath, "utf8");
+              gitignored = gitignoreContent.split("\n").some(line =>
+                line.trim() === "terraform.tfstate" ||
+                line.trim() === "*.tfstate" ||
+                line.trim() === "terraform.tfstate*" ||
+                line.trim() === ".terraform/"
+              );
+            }
+          } catch {}
+
+          stateFiles.push({
+            path: tfState.replace(os.homedir(), "~"),
+            project: entry.name,
+            hasSecrets,
+            gitignored,
+          });
+        }
+      } catch {}
+    }
+
+    if (stateFiles.length === 0) return [];
+
+    const withSecrets = stateFiles.filter(f => f.hasSecrets);
+    const withoutGitignore = stateFiles.filter(f => !f.gitignored);
+
+    if (withSecrets.length > 0) {
+      findings.push({
+        icon: "🚨",
+        title: `Terraform state files with secrets: ${withSecrets.length} file(s)`,
+        body: `- **Found**: Terraform state files containing credentials:
+${withSecrets.map(f => `  - \`${f.path}\`${f.gitignored ? "" : " (NOT in .gitignore!)"}`).join("\n")}
+- **What this means**: Terraform stores infrastructure state including database passwords, API keys, and cloud credentials in plaintext JSON. This is one of the most common sources of cloud credential leaks.
+- **Nightmare scenario**: \`terraform.tfstate\` gets committed to git → pushed to GitHub → attacker gains AWS/GCP root access → mines crypto on your account → you get a $50k bill.
+- **Fix**: Use remote state backend (S3, GCS) and ensure .gitignore coverage:
+\`\`\`bash
+echo "*.tfstate" >> .gitignore
+echo "*.tfstate.*" >> .gitignore
+\`\`\``,
+      });
+    } else if (stateFiles.length > 0) {
+      const notIgnored = withoutGitignore;
+      if (notIgnored.length > 0) {
+        findings.push({
+          icon: "⚠️",
+          title: `Terraform state files found: ${stateFiles.length} file(s)`,
+          body: `- **Found**: Terraform state files on disk:
+${stateFiles.map(f => `  - \`${f.path}\`${f.gitignored ? " (gitignored)" : " (NOT in .gitignore!)"}`).join("\n")}
+- **What this means**: Terraform state files may contain sensitive infrastructure details. ${notIgnored.length > 0 ? `${notIgnored.length} file(s) are not in .gitignore and could be accidentally committed.` : ""}
+- **Fix**: Add to .gitignore and consider using remote state:
+\`\`\`bash
+echo "*.tfstate" >> .gitignore
+echo "*.tfstate.*" >> .gitignore
+\`\`\``,
+        });
+      }
+    }
+  } catch { /* silent skip */ }
+  return findings;
+}
+
+function checkHomebrewOutdated() {
+  if (process.platform !== "darwin") return [];
+  const findings = [];
+  try {
+    const output = execSync("brew outdated --json 2>/dev/null", {
+      encoding: "utf8", timeout: 30000, maxBuffer: 5 * 1024 * 1024,
+    });
+
+    let outdated;
+    try {
+      const parsed = JSON.parse(output);
+      // brew outdated --json returns { formulae: [...], casks: [...] }
+      outdated = [
+        ...(parsed.formulae || []).map(f => ({
+          name: f.name,
+          current: f.installed_versions ? f.installed_versions.join(", ") : "?",
+          latest: f.current_version || "?",
+        })),
+        ...(parsed.casks || []).map(c => ({
+          name: c.name,
+          current: c.installed_versions || "?",
+          latest: c.current_version || "?",
+        })),
+      ];
+    } catch { return []; }
+
+    if (outdated.length === 0) return [];
+
+    const top10 = outdated.slice(0, 10);
+    const packageList = top10.map(p => `  - \`${p.name}\`: ${p.current} → ${p.latest}`).join("\n");
+    const moreText = outdated.length > 10 ? `\n  - ... and ${outdated.length - 10} more` : "";
+
+    findings.push({
+      icon: "💡",
+      title: `Homebrew: ${outdated.length} outdated package(s)`,
+      body: `- **Found**: ${outdated.length} Homebrew package(s) have updates available:
+${packageList}${moreText}
+- **What this means**: Outdated packages may contain known security vulnerabilities. While not all updates are security-related, keeping packages current reduces attack surface.
+- **Fix**: Update all Homebrew packages:
+\`\`\`bash
+brew upgrade
+\`\`\``,
+    });
+  } catch { /* brew not installed or timeout */ }
+  return findings;
+}
+
+// Registry of all checks with human-readable names for pass/fail reporting
+const CHECK_REGISTRY = [
+  { key: "claude",    fn: checkClaudeSettings,        name: "Claude Code settings (dangerousMode, MCP tokens)" },
+  { key: "claude",    fn: checkPromptInjectionSigns,   name: "Prompt injection indicators in sessions" },
+  { key: "claude",    fn: checkClaudeMdHardening,      name: "CLAUDE.md hardening rules" },
+  { key: "shell",     fn: checkShellHistorySecrets,     name: "Shell history secrets (API keys, tokens, passwords)" },
+  { key: "system",    fn: checkOpenPorts,               name: "Ports exposed on all interfaces (0.0.0.0)" },
+  { key: "git",       fn: checkGitSecurity,             name: "Git repos (.env tracked, secrets in history)" },
+  { key: "downloads", fn: checkCliTokenFiles,           name: "CLI tokens & service account keys on disk" },
+  { key: "claude",    fn: checkPasteAndSnapshots,       name: "Claude paste cache & shell snapshots" },
+  { key: "system",    fn: checkFirewall,                name: "macOS Application Firewall" },
+  { key: "clawdbot",  fn: checkClawdbot,                name: "Telegram bot tokens (clawdbot)" },
+  { key: "system",    fn: checkOperationalSafety,       name: "Screen lock & operational safety" },
+  { key: "claude",    fn: checkMcpToolSecurity,         name: "MCP tool descriptions (injection patterns)" },
+  { key: "system",    fn: checkSshKeysSecurity,         name: "SSH keys secured (passphrase protected)" },
+  { key: "git",       fn: checkGitCredentialStore,      name: "No plaintext passwords in git credential store" },
+  { key: "system",    fn: checkNgrokTunnels,            name: "No unsecured ngrok tunnels" },
+  { key: "system",    fn: checkDockerComposeExposure,   name: "Docker Compose port exposure" },
+  { key: "system",    fn: checkTerraformState,          name: "No Terraform state files with exposed secrets" },
+  { key: "system",    fn: checkHomebrewOutdated,        name: "Homebrew outdated packages" },
+];
+
 function runAllStaticChecks() {
   process.stdout.write("\n🔐 Running static security checks...");
 
-  const allFindings = [
-    ...(SKIP.has("claude")    ? [] : checkClaudeSettings()),
-    ...(SKIP.has("claude")    ? [] : checkPromptInjectionSigns()),
-    ...(SKIP.has("claude")    ? [] : checkClaudeMdHardening()),
-    ...(SKIP.has("shell")     ? [] : checkShellHistorySecrets()),
-    ...(SKIP.has("system")    ? [] : checkOpenPorts()),
-    ...(SKIP.has("git")       ? [] : checkGitSecurity()),
-    ...(SKIP.has("downloads") ? [] : checkCliTokenFiles()),
-    ...(SKIP.has("claude")    ? [] : checkPasteAndSnapshots()),
-    ...(SKIP.has("system")    ? [] : checkFirewall()),
-    ...(SKIP.has("clawdbot")  ? [] : checkClawdbot()),
-    ...(SKIP.has("system")    ? [] : checkOperationalSafety()),
-    ...(SKIP.has("claude")    ? [] : checkMcpToolSecurity()),
-  ];
+  const allFindings = [];
+  const passedChecks = [];
 
-  if (allFindings.length === 0) {
-    console.log(" ✅ No issues found");
-    return { findings: [], markdown: "" };
+  for (const { key, fn, name } of CHECK_REGISTRY) {
+    if (SKIP.has(key)) continue;
+    const results = fn();
+    if (results.length > 0) {
+      allFindings.push(...results);
+    } else {
+      passedChecks.push(name);
+    }
+  }
+
+  const passedCount = passedChecks.length;
+  const issueCount = allFindings.length;
+
+  if (issueCount === 0) {
+    console.log(` ✅ All ${passedCount} checks passed — no issues found`);
+    return { findings: [], passedChecks, markdown: "" };
   }
 
   const counts = {};
   for (const { icon } of allFindings) counts[icon] = (counts[icon] || 0) + 1;
   const summary = Object.entries(counts).map(([icon, n]) => `${icon} ${n}`).join(", ");
-  console.log(` ${summary} — ${allFindings.length} issue(s) found`);
+  console.log(` ${summary} — ${issueCount} issue(s) found, ${passedCount} checks passed`);
 
   const markdown = allFindings.map(({ icon, title, body }) => `#### ${icon} ${title}\n${body}`).join("\n\n");
 
   auditLog({
     event: "static_checks_complete",
-    total: allFindings.length,
+    total: issueCount,
+    passed: passedCount,
     critical: allFindings.filter(f => f.icon === "🚨").length,
     high: allFindings.filter(f => f.icon === "⚠️").length,
     medium: allFindings.filter(f => f.icon === "💡").length,
     checks: allFindings.map(f => f.title),
   });
 
-  return { findings: allFindings, markdown };
+  return { findings: allFindings, passedChecks, markdown };
 }
 
-function buildStaticReport(findings, markdown) {
+function buildStaticReport(findings, markdown, passedChecks = []) {
   const critical = findings.filter(f => f.icon === "🚨").length;
   const high = findings.filter(f => f.icon === "⚠️").length;
   const medium = findings.filter(f => f.icon === "💡").length;
@@ -1836,12 +2226,16 @@ function buildStaticReport(findings, markdown) {
     medium > 0  && `| MEDIUM | ${medium} | Recommended to fix |`,
   ].filter(Boolean);
 
+  const passedCount = passedChecks.length;
+  const failedChecks = CHECK_REGISTRY.length - passedCount;
+  const totalChecks = CHECK_REGISTRY.length;
+
   return [
     `<!-- findings: ${total} -->`,
     `# vibe-sec Security Report`,
     `_Static security audit · ${new Date().toISOString().slice(0, 10)}_`,
     ``,
-    `---`,
+    `> 🟢 **${passedCount} passed** · 🟡 **${medium} need attention** · 🔴 **${critical + high} failed** — ${totalChecks}-point checklist`,
     ``,
     `## Status`,
     ``,
@@ -1849,6 +2243,8 @@ function buildStaticReport(findings, markdown) {
     `- Personal projects and experiments`,
     `- Open source, learning, prototypes`,
     `- Vibe-coding with full agent access to code`,
+    ``,
+    `&nbsp;`,
     ``,
     `**This machine should NOT be used for:**`,
     `- Production pipelines and prod deployments`,
@@ -1865,6 +2261,10 @@ function buildStaticReport(findings, markdown) {
     verdictNote,
     ``,
     ...riskItems.map(r => [`- ${r}`, ``]).flat(),
+    ...(passedChecks.length > 0 ? [
+      `> ✅ **${passedChecks.length} check(s) passed** — [see what's secure](#passed-checks)`,
+      ``,
+    ] : []),
     `→ [What is Prompt Injection?](#prompt-injection)`,
     `→ [Findings and remediation](#findings)`,
     `→ [Deep log analysis](#deep-analysis)`,
@@ -1881,6 +2281,18 @@ function buildStaticReport(findings, markdown) {
     ``,
     `---`,
     ``,
+    ...(passedChecks.length > 0 ? [
+      `## Passed Checks`,
+      ``,
+      `These areas were scanned and **no issues found**:`,
+      ``,
+      ...passedChecks.map(c => `- ✅ ${c}`),
+      ``,
+      `> _${passedChecks.length} passed, ${CHECK_REGISTRY.length - passedChecks.length} flagged — ${CHECK_REGISTRY.length} checks total._`,
+      ``,
+      `---`,
+      ``,
+    ] : []),
     `## Stay Protected`,
     ``,
     `> **Get the vibe-sec menubar app** — sits in your menu bar, shows security score at a glance, one-click scan, auto-update notifications. No background processes, no permissions.`,
@@ -2511,9 +2923,9 @@ async function main() {
 
   // Static-only mode: no Gemini API key needed
   if (mode === "static") {
-    const { findings, markdown } = runAllStaticChecks();
+    const { findings, passedChecks, markdown } = runAllStaticChecks();
     const date = new Date().toISOString().slice(0, 10);
-    const mdContent = buildStaticReport(findings, markdown);
+    const mdContent = buildStaticReport(findings, markdown, passedChecks);
     const outFileMd = `vibe-sec-log-report-${date}.md`;
     const outFileHtml = `vibe-sec-log-report-${date}.html`;
     fs.writeFileSync(outFileMd, mdContent);

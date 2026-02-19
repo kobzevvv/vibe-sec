@@ -43,9 +43,9 @@ log(`Score: ${score} (prev: ${prev})`);
 if (score !== prev) {
   const title   = score === "0" ? "vibe-sec ✅" : "vibe-sec 🔍";
   const body    = score === "0"
-    ? "Всё чисто, угроз не найдено"
-    : `Найдено проблем: ${score} — запусти npm run report`;
-  const subtitle = "Ежечасная проверка";
+    ? "All clear, no threats found"
+    : `Issues found: ${score} — run npm run report`;
+  const subtitle = "Daily security scan";
   spawnSync("osascript", ["-e",
     `display notification ${JSON.stringify(body)} with title ${JSON.stringify(title)} subtitle ${JSON.stringify(subtitle)}`
   ], { stdio: "ignore" });

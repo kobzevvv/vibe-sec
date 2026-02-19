@@ -34,7 +34,7 @@ if (process.argv[1].includes("allow.mjs") && !args.length && process.env.npm_lif
 // npm run allowlist -- --clear
 if (args.includes("--clear")) {
   try { fs.writeFileSync(ALLOWLIST, ""); } catch { /* empty */ }
-  console.log("✅ Allowlist очищен.");
+  console.log("✅ Allowlist cleared.");
   process.exit(0);
 }
 
@@ -64,7 +64,7 @@ addPattern(pattern);
 function addPattern(pat) {
   // Validate regex
   try { new RegExp(pat); } catch (e) {
-    console.error(`❌ Невалидный regex: ${e.message}`);
+    console.error(`❌ Invalid regex: ${e.message}`);
     process.exit(1);
   }
 
@@ -72,21 +72,21 @@ function addPattern(pat) {
   let existing = [];
   try { existing = fs.readFileSync(ALLOWLIST, "utf8").split("\n").map(l => l.trim()); } catch { /* ok */ }
   if (existing.includes(pat)) {
-    console.log(`ℹ️  Паттерн уже в allowlist: ${pat}`);
+    console.log(`ℹ️  Pattern already in allowlist: ${pat}`);
     return;
   }
 
   fs.appendFileSync(ALLOWLIST, `${pat}\n`);
 
   console.log(`
-✅ Добавлено в allowlist: ${pat}
-   Файл: ${ALLOWLIST}
+✅ Added to allowlist: ${pat}
+   File: ${ALLOWLIST}
 
-Команды, совпадающие с этим паттерном, больше не будут блокироваться (L2/L3).
-L1 (rm -rf ~/, curl|bash, fork bomb) — нельзя отменить, всегда блокируется.
+Commands matching this pattern will no longer be blocked (L2/L3).
+L1 (rm -rf ~/, curl|bash, fork bomb) — cannot be allowed, always blocked.
 
-Посмотреть все правила:   npm run allowlist
-Удалить правило:          отредактируй ${ALLOWLIST}
+View all rules:   npm run allowlist
+Remove a rule:    edit ${ALLOWLIST}
 `);
 }
 
@@ -101,21 +101,21 @@ function showAllowlist() {
 
   if (!lines.length) {
     console.log(`
-📋 Allowlist пуст.
-   Файл: ${ALLOWLIST}
+📋 Allowlist is empty.
+   File: ${ALLOWLIST}
 
-Команды блокируются по умолчанию (L2: prompt injection heuristics).
-Чтобы добавить исключение: npm run allow -- 'regex-pattern'
+Commands are blocked by default (L2: prompt injection heuristics).
+To add an exception: npm run allow -- 'regex-pattern'
 `);
     return;
   }
 
-  console.log(`\n📋 vibe-sec allowlist (${lines.length} правил):`);
-  console.log(`   Файл: ${ALLOWLIST}\n`);
+  console.log(`\n📋 vibe-sec allowlist (${lines.length} rule${lines.length === 1 ? "" : "s"}):`);
+  console.log(`   File: ${ALLOWLIST}\n`);
   lines.forEach((l, i) => console.log(`  ${i + 1}. ${l}`));
   console.log(`
-Чтобы удалить правило — отредактируй файл выше.
-Чтобы очистить всё:  npm run allowlist -- --clear
+To remove a rule — edit the file above.
+To clear everything:  npm run allowlist -- --clear
 `);
 }
 
@@ -131,7 +131,7 @@ async function allowLast() {
   } catch { /* empty */ }
 
   if (!entries.length) {
-    console.log("ℹ️  Нет заблокированных команд в логе.");
+    console.log("ℹ️  No blocked commands in log.");
     return;
   }
 
@@ -139,27 +139,27 @@ async function allowLast() {
   const subjectShort = String(last.subject).slice(0, 200);
 
   console.log(`
-Последняя заблокированная команда:
+Last blocked command:
 
-  Причина:  ${last.reason}
-  Команда:  ${subjectShort}
-  Время:    ${new Date(last.ts).toLocaleString("ru")}
+  Reason:   ${last.reason}
+  Command:  ${subjectShort}
+  Time:     ${new Date(last.ts).toLocaleString("en")}
 `);
 
   if (last.suggestedPattern) {
-    console.log(`Предлагаемый паттерн для allowlist:\n  ${last.suggestedPattern}\n`);
+    console.log(`Suggested allowlist pattern:\n  ${last.suggestedPattern}\n`);
   }
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const suggested = last.suggestedPattern || "";
   const answer = await rl.question(
-    `Введи regex-паттерн для allowlist${suggested ? ` [${suggested}]` : ""}: `
+    `Enter regex pattern for allowlist${suggested ? ` [${suggested}]` : ""}: `
   );
   rl.close();
 
   const pat = answer.trim() || suggested;
   if (!pat) {
-    console.log("Отменено.");
+    console.log("Cancelled.");
     return;
   }
   addPattern(pat);
@@ -169,12 +169,12 @@ function printHelp() {
   console.log(`
 vibe-sec allowlist manager
 
-  npm run allow -- 'curl.*api\\.myservice\\.com'   # добавить паттерн
-  npm run allow-last                               # разрешить последнюю блокировку
-  npm run allowlist                                # показать все правила
-  npm run allowlist -- --clear                     # очистить всё
+  npm run allow -- 'curl.*api\\.myservice\\.com'   # add pattern
+  npm run allow-last                               # allow last blocked command
+  npm run allowlist                                # show all rules
+  npm run allowlist -- --clear                     # clear everything
 
-Паттерны — это регулярные выражения (JS regex).
-L1 (rm -rf ~/, curl|bash, fork bomb) нельзя добавить в allowlist.
+Patterns are JavaScript regular expressions.
+L1 (rm -rf ~/, curl|bash, fork bomb) cannot be added to allowlist.
 `);
 }
