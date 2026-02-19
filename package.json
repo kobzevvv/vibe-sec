@@ -27,6 +27,17 @@
   "license": "MIT",
   "private": false,
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kobzevvv/vibe-sec"
+  },
+  "bugs": {
+    "url": "https://github.com/kobzevvv/vibe-sec/issues"
+  },
+  "homepage": "https://github.com/kobzevvv/vibe-sec#readme",
   "bin": {
     "vibe-sec": "./bin/vibe-sec.mjs"
   },
