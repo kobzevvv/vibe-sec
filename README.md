@@ -1,4 +1,4 @@
-# vibe-sec
+# safe-space
 
 **Security guardrails for AI coding agents — blocks prompt injection, prevents exfiltration, scans session logs.**
 
@@ -6,7 +6,7 @@
 
 You use Claude Code, Cursor, or Windsurf to build fast. An attacker embeds instructions in a README, a dependency docstring, or a GitHub issue. Your agent reads it and silently exfiltrates your SSH keys. You never know.
 
-vibe-sec is three layers of protection:
+safe-space is three layers of protection:
 
 | Layer | What it does | When |
 |---|---|---|
@@ -14,7 +14,7 @@ vibe-sec is three layers of protection:
 | 🔍 **Log Scanner** | Reads your Claude Code session history, finds leaked keys and suspicious activity | Daily, in background |
 | 🌐 **Cloud Scanner** | Scans your GitHub repos and endpoints from outside, like an attacker would | Daily via Cloudflare cron |
 
-**→ [See a real report example](https://kobzevvv.github.io/vibe-sec/report-example.html)** &nbsp;|&nbsp; **→ [macOS menubar app](https://github.com/kobzevvv/vibe-sec-app)** &nbsp;|&nbsp; **→ [Windows tray app](https://github.com/kobzevvv/vibe-sec-app-win)**
+**→ [See a real report example](https://chill-ai-space.github.io/safe-space/report-example.html)** &nbsp;|&nbsp; **→ [macOS menubar app](https://github.com/Chill-AI-Space/safe-space-macos)** &nbsp;|&nbsp; **→ [Windows tray app](https://github.com/Chill-AI-Space/safe-space-windows)**
 
 ---
 
@@ -23,20 +23,20 @@ vibe-sec is three layers of protection:
 Run a one-time security audit of your Claude Code sessions — no setup required:
 
 ```bash
-npx vibe-sec scan
+npx safe-space scan
 ```
 
 Don't trust npm? Run directly from GitHub — inspect the source first:
 
 ```bash
-npx -p github:kobzevvv/vibe-sec vibe-sec scan
+npx -p github:Chill-AI-Space/safe-space safe-space scan
 ```
 
 Or clone and run:
 
 ```bash
-git clone --depth=1 https://github.com/kobzevvv/vibe-sec /tmp/vibe-sec
-node /tmp/vibe-sec/scripts/scan-logs.mjs --static-only
+git clone --depth=1 https://github.com/Chill-AI-Space/safe-space /tmp/safe-space
+node /tmp/safe-space/scripts/scan-logs.mjs --static-only
 ```
 
 Opens an interactive HTML report at `localhost:7777`. Nothing leaves your machine.
@@ -82,18 +82,18 @@ Three protection levels, all under 5ms:
 
 **Quick (from npm):**
 ```bash
-npx vibe-sec setup
+npx safe-space setup
 ```
 
 **From GitHub (verify the source):**
 ```bash
-npx -p github:kobzevvv/vibe-sec vibe-sec setup
+npx -p github:Chill-AI-Space/safe-space safe-space setup
 ```
 
 **Or clone and install manually:**
 ```bash
-git clone https://github.com/kobzevvv/vibe-sec
-cd vibe-sec
+git clone https://github.com/Chill-AI-Space/safe-space
+cd safe-space
 npm run install-hooks
 ```
 
@@ -106,7 +106,7 @@ cat ~/.claude/settings.json | grep hook
 
 To remove:
 ```bash
-npx vibe-sec uninstall
+npx safe-space uninstall
 ```
 
 ### What Happens When Something Is Blocked
@@ -130,7 +130,7 @@ npm run allowlist -- --clear               # reset everything
 
 Emergency override for current session:
 ```bash
-export VIBE_SEC_GUARD=off
+export SAFE_SPACE_GUARD=off
 ```
 
 ---
@@ -184,7 +184,7 @@ npm run validate-keys
   ElevenLabs     xi_a****b3c4   →  🔴 ACTIVE   — rotate immediately!
 ```
 
-No false alarms for keys you already rotated. This check is unique to vibe-sec.
+No false alarms for keys you already rotated. This check is unique to safe-space.
 
 ### Background Daemon
 
@@ -195,7 +195,7 @@ npm run setup-daemon    # install: runs daily + on login, sends macOS notificati
 npm run remove-daemon   # uninstall
 ```
 
-Logs at `~/.config/vibe-sec/daemon.log`.
+Logs at `~/.config/safe-space/daemon.log`.
 
 ---
 
@@ -231,7 +231,7 @@ wrangler kv namespace create SCAN_RESULTS
 wrangler deploy
 ```
 
-Scanner runs daily at 9am UTC via cron. Access reports at `https://vibe-sec.<your-subdomain>.workers.dev/report`.
+Scanner runs daily at 9am UTC via cron. Access reports at `https://safe-space.<your-subdomain>.workers.dev/report`.
 
 ---
 
@@ -239,28 +239,28 @@ Scanner runs daily at 9am UTC via cron. Access reports at `https://vibe-sec.<you
 
 Native status bar / tray app — always-visible security score, scan on demand, instant alerts.
 
-**→ macOS: [github.com/kobzevvv/vibe-sec-app](https://github.com/kobzevvv/vibe-sec-app)**
-**→ Windows: [github.com/kobzevvv/vibe-sec-app-win](https://github.com/kobzevvv/vibe-sec-app-win)**
+**→ macOS: [github.com/Chill-AI-Space/safe-space-macos](https://github.com/Chill-AI-Space/safe-space-macos)**
+**→ Windows: [github.com/Chill-AI-Space/safe-space-windows](https://github.com/Chill-AI-Space/safe-space-windows)**
 
 ### Install options
 
 **Option A — Download (easiest)**
-1. Download `VibeSec-x.x.x.zip` from [Releases](https://github.com/kobzevvv/vibe-sec-app/releases/latest)
-2. Unzip → drag `VibeSec.app` to `/Applications`
+1. Download `SafeSpace-x.x.x.zip` from [Releases](https://github.com/Chill-AI-Space/safe-space-macos/releases/latest)
+2. Unzip → drag `SafeSpace.app` to `/Applications`
 3. If macOS blocks it: System Settings → Privacy & Security → Open Anyway
 
 **Option B — Homebrew**
 ```bash
-brew tap kobzevvv/tap
-brew install --cask vibe-sec-app
+brew tap Chill-AI-Space/tap
+brew install --cask safe-space
 ```
 
 **Option C — Build from source**
 ```bash
-git clone https://github.com/kobzevvv/vibe-sec-app
-cd vibe-sec-app
+git clone https://github.com/Chill-AI-Space/safe-space-macos
+cd safe-space-macos
 swift build -c release
-open .build/release/VibeSec
+open .build/release/SafeSpace
 ```
 
 ---
@@ -318,9 +318,9 @@ npm run deploy                     # deploy to Cloudflare Workers
 
 ---
 
-## Why vibe-sec
+## Why safe-space
 
-| Feature | vibe-sec | mcp-scan | mcp-shield | Snyk Agent Guard |
+| Feature | safe-space | mcp-scan | mcp-shield | Snyk Agent Guard |
 |---|---|---|---|---|
 | Real-time hook guard | ✅ | — | — | ✅ (commercial) |
 | Local log forensics | ✅ | — | — | — |
@@ -345,20 +345,20 @@ npm run deploy                     # deploy to Cloudflare Workers
 
 ## Telemetry
 
-vibe-sec collects **anonymous usage data** to understand what it finds in the wild.
+safe-space collects **anonymous usage data** to understand what it finds in the wild.
 
-What is collected: event type, finding counts and categories (not content), block type and level (not the command), blocked command length bucket and interpreter (bash/python/node/etc — not the command itself), scan source (cli/app/daemon), macOS/Node version, vibe-sec version, which AI tools are present (from a fixed known list).
+What is collected: event type, finding counts and categories (not content), block type and level (not the command), blocked command length bucket and interpreter (bash/python/node/etc — not the command itself), scan source (cli/app/daemon), macOS/Node version, safe-space version, which AI tools are present (from a fixed known list).
 
 What is **not** collected: commands, file paths, keys, full app list, repo names.
 
-**→ Live stats (public):** [vibe-sec-telemetry.dev-a96.workers.dev/public/stats](https://vibe-sec-telemetry.dev-a96.workers.dev/public/stats)
+**→ Live stats (public):** [safe-space-telemetry.dev-a96.workers.dev/public/stats](https://safe-space-telemetry.dev-a96.workers.dev/public/stats)
 
 All collected data is publicly readable — scans per day, most common findings, block rates, interpreter breakdown.
 
 **Opt out:**
 ```bash
-npx vibe-sec telemetry off          # permanent
-export VIBE_SEC_TELEMETRY=off       # per-session
+npx safe-space telemetry off          # permanent
+export SAFE_SPACE_TELEMETRY=off       # per-session
 ```
 
 Full implementation: [`scripts/telemetry.mjs`](scripts/telemetry.mjs) — read the source to verify.
@@ -369,9 +369,9 @@ Full implementation: [`scripts/telemetry.mjs`](scripts/telemetry.mjs) — read t
 
 | Project | Platform | Description |
 |---------|----------|-------------|
-| [vibe-sec-app](https://github.com/kobzevvv/vibe-sec-app) | macOS | Menubar app |
-| [vibe-sec-app-win](https://github.com/kobzevvv/vibe-sec-app-win) | Windows | System tray app |
-| [vibe-sec-dirty-machine](https://github.com/kobzevvv/vibe-sec-dirty-machine) | All | Test fixtures (fake secrets) |
+| [safe-space-macos](https://github.com/Chill-AI-Space/safe-space-macos) | macOS | Menubar app |
+| [safe-space-windows](https://github.com/Chill-AI-Space/safe-space-windows) | Windows | System tray app |
+| [safe-space-dirty-machine](https://github.com/Chill-AI-Space/safe-space-dirty-machine) | All | Test fixtures (fake secrets) |
 
 ---
 

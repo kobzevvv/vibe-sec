@@ -1,5 +1,5 @@
 {
-  "name": "vibe-sec",
+  "name": "safe-space",
   "version": "0.1.0",
   "description": "Security guardrails for AI coding agents — blocks prompt injection, prevents exfiltration, scans Claude Code session logs",
   "keywords": [
@@ -32,14 +32,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kobzevvv/vibe-sec"
+    "url": "https://github.com/Chill-AI-Space/safe-space"
   },
   "bugs": {
-    "url": "https://github.com/kobzevvv/vibe-sec/issues"
+    "url": "https://github.com/Chill-AI-Space/safe-space/issues"
   },
-  "homepage": "https://github.com/kobzevvv/vibe-sec#readme",
+  "homepage": "https://github.com/Chill-AI-Space/safe-space#readme",
   "bin": {
-    "vibe-sec": "./bin/vibe-sec.mjs"
+    "safe-space": "./bin/vibe-sec.mjs"
   },
   "files": [
     "bin/",
